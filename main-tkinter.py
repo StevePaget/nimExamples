@@ -39,7 +39,7 @@ class Main(tk.Tk):
 
 
     def doneclicked(self):
-        if self.gamestate == 1:  # computer's turn, so no clicking allowed
+        if self.gamestate != 0:  # computer's turn, so no clicking allowed
             return
         if self.columnchosen is None or self.numberchosen == 0:
             playsound("bad.wav",block=False)
@@ -53,9 +53,58 @@ class Main(tk.Tk):
         self.columnchosen = None
         self.numberchosen = 0
         self.drawBoard()
+        if self.piles == [0,0,0,0]:
+            self.theCanvas.itemconfig(self.infotext,text="You WIN!")
+            self.gamestate = 2
+            return
         self.gamestate = 1
         # now Do Computer Turn!
+        self.computerTurn()
 
+    def isBalanced(self, testpiles):
+        # look at self.piles and see if they represent a balanced board
+        answer = 0
+        for pile in testpiles:
+            answer = answer ^ pile
+        return answer==0
+
+    def computerTurn(self):
+        # look at the board and see if its balanced
+        if self.isBalanced(self.piles):
+        # if so, choose a random move
+            valid = False
+            while not valid:
+                column = random.randint(0,3)
+                if self.piles[column] == 0:
+                    continue
+                numToRemove = random.randint(1,self.piles[column])
+                if numToRemove <= self.piles[column]:
+                    self.piles[column] -= numToRemove
+                    valid = True
+            
+            self.after(2000, self.startPlayerTurn)
+        else:
+            # otherwise,choose a move that makes it balanced
+
+            # try every pile and every number of stones
+            for pilenum in range(4):
+                if self.piles[pilenum] > 0:
+                    for numtoRemove in range(1,self.piles[pilenum]+1):
+                        testpiles = self.piles[:]
+                        testpiles[pilenum] -= numtoRemove
+                        if self.isBalanced(testpiles):
+                            self.piles = testpiles
+                            self.after(2000, self.startPlayerTurn)
+                            return
+        
+    def startPlayerTurn(self):
+        self.drawBoard()
+        if self.piles == [0,0,0,0]:
+            self.theCanvas.itemconfig(self.infotext,text="Computer WINS!")
+            self.gamestate = 2
+            return
+        self.gamestate = 0
+        self.theCanvas.itemconfig(self.infotext,text="Your Turn")
 
     def undoclicked(self):
         if self.gamestate == 1:  # computer's turn, so no clicking allowed
@@ -90,7 +139,7 @@ class Main(tk.Tk):
             self.drawBoard()
 
     def setupGame(self):
-        self.piles = [7,5,3,1]
+        self.piles = [random.randint(1,8) for _ in range(4)]
         self.drawBoard()
 
     def drawBoard(self):
@@ -116,3 +165,6 @@ class Main(tk.Tk):
             y = 300
 
 app = Main()
+
+
+        
